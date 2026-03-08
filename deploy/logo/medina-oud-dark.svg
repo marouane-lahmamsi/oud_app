@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" fill="none">
+  <!-- Dark version for light backgrounds -->
+  <g transform="translate(20, 20)">
+    <path d="M10 60 Q10 40 25 35 L55 30 Q70 28 75 40 Q80 55 70 65 L45 75 Q25 82 10 60Z" fill="#C9A962"/>
+    <path d="M20 50 Q35 45 50 48 Q60 50 65 45" stroke="#A68B4B" stroke-width="2" fill="none"/>
+    <path d="M25 58 Q40 55 55 58" stroke="#A68B4B" stroke-width="1.5" fill="none"/>
+    <path d="M55 30 Q60 15 55 5 Q50 15 52 25" stroke="#E8D5A3" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M62 28 Q68 18 65 10" stroke="#F0E4C0" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>
+  
+  <text x="110" y="55" font-family="Cormorant Garamond, Georgia, serif" font-size="42" font-weight="600" fill="#1A1A1A">
+    Medina
+  </text>
+  <text x="225" y="55" font-family="Cormorant Garamond, Georgia, serif" font-size="42" font-weight="400" fill="#C9A962">
+    Oud
+  </text>
+  
+  <text x="110" y="78" font-family="Inter, system-ui, sans-serif" font-size="11" font-weight="400" fill="#666666" letter-spacing="2">
+    L'ART DE L'OUD AUTHENTIQUE
+  </text>
+</svg>
