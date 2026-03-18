@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CreditCard, Truck, Check } from 'lucide-react';
+import { ArrowLeft, CreditCard, Truck } from 'lucide-react';
 import { Header } from '@/sections/Header';
 import { Footer } from '@/sections/Footer';
 import { CartDrawer } from '@/components/ui/CartDrawer';
@@ -187,7 +187,7 @@ export function Checkout() {
                     <div key={item.id} className="flex gap-4">
                       <div className="w-16 h-16 bg-stone-100 rounded-lg overflow-hidden">
                         <img 
-                          src={item.product.image_url} 
+                          src={item.product.images[0]} 
                           alt={item.product.name}
                           className="w-full h-full object-cover"
                         />

@@ -60,7 +60,7 @@ export function CartDrawer() {
                     {/* Product Image */}
                     <div className="w-20 h-20 bg-stone-100 rounded-lg overflow-hidden flex-shrink-0">
                       <img
-                        src={item.product.image_url || item.product.additional_images?.[0] || '/placeholder-product.png'}
+                        src={item.product.images?.[0] || '/placeholder-product.png'}
                         alt={item.product.name}
                         className="w-full h-full object-cover"
                       />

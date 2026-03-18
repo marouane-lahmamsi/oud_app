@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, RotateCcw, Check } from 'lucide-react';
 import { Header } from '@/sections/Header';
 import { Footer } from '@/sections/Footer';
@@ -12,7 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { quizQuestions } from '@/data/products';
 import { cn } from '@/lib/utils';
 import { products } from '@/data/products';
-import type { QuizResult } from '@/types';
+import type { QuizResult, OlfactoryProfile } from '@/types';
 
 export function Quiz() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -69,7 +68,7 @@ export function Quiz() {
       });
     });
 
-    const dominantProfile = Object.entries(profileCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'boise';
+    const dominantProfile = (Object.entries(profileCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'boise') as OlfactoryProfile;
     
     const descriptions: Record<string, string> = {
       boise: 'Vous appréciez les notes profondes et authentiques du bois.',

@@ -3,6 +3,7 @@ import { ArrowRight, Package, Check, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 import { bundles } from '@/data/products';
+import type { BundleProduct, Accessory } from '@/types';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -95,7 +96,7 @@ export function Bundles() {
                   <p className="text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">
                     Ce pack inclut :
                   </p>
-                  {bundle.products.map((item, i) => (
+                  {bundle.products.map((item: BundleProduct, i: number) => (
                     <div key={i} className="flex items-center gap-2 text-sm">
                       <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       <span className="text-stone-700">
@@ -103,7 +104,7 @@ export function Bundles() {
                       </span>
                     </div>
                   ))}
-                  {bundle.accessories.slice(0, 2).map((acc, i) => (
+                  {bundle.accessories.slice(0, 2).map((acc: Accessory, i: number) => (
                     <div key={`acc-${i}`} className="flex items-center gap-2 text-sm">
                       <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       <span className="text-stone-700">{acc.name}</span>

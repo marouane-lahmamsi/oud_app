@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ChevronDown, HelpCircle, MessageCircle, Search } from 'lucide-react';
 import { Header } from '@/sections/Header';
 import { Footer } from '@/sections/Footer';

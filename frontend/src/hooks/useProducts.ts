@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { productsAPI } from '@/services/api';
 import type { Product, Category } from '@/types';
 
@@ -32,7 +32,8 @@ export function useProducts(options: UseProductsOptions = {}) {
         }
 
         if (result.success && result.data) {
-          setProducts(result.data);
+          const productsData = Array.isArray(result.data) ? result.data : result.data.data || [];
+          setProducts(productsData);
         } else {
           setError(result.error || 'Failed to fetch products');
         }

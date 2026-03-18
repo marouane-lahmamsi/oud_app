@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import type { Cart, CartItem, Product, ProductVariant } from '@/types';
+import type { Cart, CartItem, Product } from '@/types';
 
 interface CartContextType {
   cart: Cart;
@@ -42,8 +42,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addToCart = useCallback((product: Product, variantSize: string, quantity: number = 1) => {
-    const variant = product.variants?.find(v => v.size === variantSize);
-    if (!variant) return;
+    const format = product.formats?.find(f => f.size === variantSize);
+    if (!format) return;
 
     setCart(prev => {
       const existingItem = prev.items.find(
@@ -59,11 +59,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
         );
       } else {
         const newItem: CartItem = {
-          id: `${product.id}-${variant.id}-${Date.now()}`,
+          id: `${product.id}-${format.size}-${Date.now()}`,
           product,
-          variant,
+          variant: {
+            id: Date.now(),
+            product_id: parseInt(product.id.replace(/\D/g, '')) || 0,
+            size: format.size,
+            sku: `${product.slug}-${format.size}`,
+            price: format.price,
+            promo_price: format.originalPrice,
+            stock_qty: 100,
+            is_in_stock: format.inStock,
+            is_low_stock: false,
+            is_active: true,
+            is_default: product.formats[0]?.size === format.size,
+          },
           quantity,
-          price: variant.promo_price || variant.price,
+          price: format.originalPrice || format.price,
         };
         newItems = [...prev.items, newItem];
       }

@@ -92,6 +92,7 @@ export const products: Product[] = [
     reviewCount: 89,
     inStock: true,
     isNew: true,
+    isBestseller: false,
     tags: ['indonesie', 'doux', 'floral', 'quotidien'],
     details: {
       origin: 'Îles de Sumatra, Indonésie',
@@ -203,6 +204,7 @@ export const products: Product[] = [
     rating: 4.9,
     reviewCount: 203,
     inStock: true,
+    isBestseller: false,
     tags: ['spirituel', 'resineux', 'priere', 'meditation'],
     details: {
       origin: 'Forêts du nord de la Thaïlande',
@@ -259,6 +261,7 @@ export const products: Product[] = [
     reviewCount: 78,
     inStock: true,
     isNew: true,
+    isBestseller: false,
     tags: ['floral', 'jasmin', 'feminin', 'elegant'],
     details: {
       origin: 'Région du Ninh Thuận, Vietnam',
@@ -314,6 +317,7 @@ export const products: Product[] = [
     rating: 4.8,
     reviewCount: 94,
     inStock: true,
+    isBestseller: false,
     tags: ['fume', 'desert', 'mysterieux', 'intense'],
     details: {
       origin: 'Hadhramout, Yémen',
@@ -369,6 +373,7 @@ export const products: Product[] = [
     rating: 4.5,
     reviewCount: 112,
     inStock: true,
+    isBestseller: false,
     tags: ['sucre', 'gourmand', 'accessible', 'miel'],
     details: {
       origin: 'Assam, Inde',
@@ -424,6 +429,7 @@ export const products: Product[] = [
     rating: 5.0,
     reviewCount: 67,
     inStock: true,
+    isBestseller: false,
     tags: ['pur', 'traditionnel', 'authentique', 'elite'],
     details: {
       origin: 'Forêts primaires de Brunei',
@@ -563,6 +569,7 @@ export const bundles: Bundle[] = [
     totalPrice: 1295,
     bundlePrice: 1099,
     savings: 196,
+    isStarterKit: false,
   },
   {
     id: 'bundle-3',
@@ -584,6 +591,7 @@ export const bundles: Bundle[] = [
     totalPrice: 645,
     bundlePrice: 549,
     savings: 96,
+    isStarterKit: false,
   },
 ];
 

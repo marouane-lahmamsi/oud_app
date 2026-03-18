@@ -6,7 +6,6 @@ import {
   Plus, 
   ShoppingCart, 
   Check, 
-  Share2, 
   Heart,
   Truck,
   Shield,
@@ -23,22 +22,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProduct } from '@/hooks/useProducts';
 import { useCart } from '@/hooks/useCart';
 import { cn } from '@/lib/utils';
-import type { Product as ProductType } from '@/types';
 
 export function Product() {
   const { slug } = useParams<{ slug: string }>();
   const { product, relatedProducts, loading, error } = useProduct(slug || '');
   const { addToCart } = useCart();
   
-  const [selectedVariant, setSelectedVariant] = useState(product?.variants?.[0]);
+  const [selectedFormat, setSelectedFormat] = useState(product?.formats?.[0]);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isAdded, setIsAdded] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
 
   useEffect(() => {
-    if (product?.variants?.[0]) {
-      setSelectedVariant(product.variants[0]);
+    if (product?.formats?.[0]) {
+      setSelectedFormat(product.formats[0]);
     }
   }, [product]);
 
@@ -67,8 +65,8 @@ export function Product() {
   }
 
   const handleAddToCart = () => {
-    if (selectedVariant) {
-      addToCart(product, selectedVariant.size, quantity);
+    if (selectedFormat) {
+      addToCart(product, selectedFormat.size, quantity);
       setIsAdded(true);
       setTimeout(() => setIsAdded(false), 2000);
     }
@@ -98,7 +96,7 @@ export function Product() {
     doux: 'Doux',
   };
 
-  const allImages = [product.image_url, ...(product.additional_images || [])].filter(Boolean);
+  const allImages = product.images || [];
 
   return (
     <div className="min-h-screen bg-[#FAF7F2]">
@@ -163,12 +161,12 @@ export function Product() {
                     {profileLabels[product.profile]}
                   </span>
                 )}
-                {product.is_new && (
+                {product.isNew && (
                   <span className="px-2.5 py-1 bg-stone-900 text-white text-xs font-medium rounded-full">
                     Nouveau
                   </span>
                 )}
-                {product.is_bestseller && (
+                {product.isBestseller && (
                   <span className="px-2.5 py-1 bg-rose-100 text-rose-700 text-xs font-medium rounded-full">
                     Best-seller
                   </span>
@@ -181,49 +179,49 @@ export function Product() {
               </h1>
               <div className="flex items-center gap-4 mb-4">
                 <span className="text-sm text-stone-500">
-                  ★ {product.rating} ({product.review_count} avis)
+                  ★ {product.rating} ({product.reviewCount} avis)
                 </span>
                 <span className="text-stone-400">|</span>
                 <span className="text-sm text-stone-500">{product.origin}</span>
               </div>
 
               {/* Description */}
-              <p className="text-stone-600 mb-6">{product.short_description}</p>
+              <p className="text-stone-600 mb-6">{product.shortDescription}</p>
 
               {/* Price */}
               <div className="flex items-baseline gap-3 mb-6">
                 <span className="font-serif text-3xl font-semibold text-stone-900">
-                  {formatPrice(selectedVariant?.price || product.base_price || 0)}
+                  {formatPrice(selectedFormat?.price || product.price || 0)}
                 </span>
-                {selectedVariant?.promo_price && (
+                {selectedFormat?.originalPrice && (
                   <span className="text-lg text-stone-400 line-through">
-                    {formatPrice(selectedVariant.promo_price)}
+                    {formatPrice(selectedFormat.originalPrice)}
                   </span>
                 )}
               </div>
 
               {/* Variant Selection */}
-              {product.variants && product.variants.length > 0 && (
+              {product.formats && product.formats.length > 0 && (
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-stone-700 mb-3">
                     Format
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {product.variants.map((variant) => (
+                    {product.formats.map((format) => (
                       <button
-                        key={variant.id}
-                        onClick={() => setSelectedVariant(variant)}
-                        disabled={!variant.is_in_stock}
+                        key={format.size}
+                        onClick={() => setSelectedFormat(format)}
+                        disabled={!format.inStock}
                         className={cn(
                           'px-4 py-2 rounded-lg border-2 font-medium transition-all',
-                          selectedVariant?.id === variant.id
+                          selectedFormat?.size === format.size
                             ? 'border-stone-900 bg-stone-900 text-white'
                             : 'border-stone-200 text-stone-700 hover:border-stone-400',
-                          !variant.is_in_stock && 'opacity-40 cursor-not-allowed'
+                          !format.inStock && 'opacity-40 cursor-not-allowed'
                         )}
                       >
-                        {variant.size}
-                        {!variant.is_in_stock && ' (Rupture)'}
+                        {format.size}
+                        {!format.inStock && ' (Rupture)'}
                       </button>
                     ))}
                   </div>
@@ -263,7 +261,7 @@ export function Product() {
                       : 'bg-stone-900 hover:bg-stone-800'
                   )}
                   onClick={handleAddToCart}
-                  disabled={!selectedVariant?.is_in_stock}
+                  disabled={!selectedFormat?.inStock}
                 >
                   {isAdded ? (
                     <>

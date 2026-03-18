@@ -16,12 +16,12 @@ export function ProductCard({ product, className, showQuickAdd = true }: Product
   const { addToCart } = useCart();
   const navigate = useNavigate();
   const [isAdded, setIsAdded] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState(product.variants?.[0]);
+  const [selectedFormat, setSelectedFormat] = useState(product.formats?.[0]);
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleQuickAdd = () => {
-    if (selectedVariant) {
-      addToCart(product, selectedVariant.size);
+    if (selectedFormat) {
+      addToCart(product, selectedFormat.size);
       setIsAdded(true);
       setTimeout(() => setIsAdded(false), 2000);
     }
@@ -67,7 +67,7 @@ export function ProductCard({ product, className, showQuickAdd = true }: Product
         
         {/* Product Image */}
         <img
-          src={product.image_url || product.additional_images?.[0] || '/images/placeholder.jpg'}
+          src={product.images?.[0] || '/images/placeholder.jpg'}
           alt={product.name}
           className={cn(
             'w-full h-full object-cover transition-transform duration-700',
@@ -79,17 +79,17 @@ export function ProductCard({ product, className, showQuickAdd = true }: Product
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {product.is_new && (
+          {product.isNew && (
             <span className="px-2.5 py-1 bg-stone-900 text-white text-xs font-medium rounded-full">
               Nouveau
             </span>
           )}
-          {product.is_bestseller && (
+          {product.isBestseller && (
             <span className="px-2.5 py-1 bg-amber-500 text-white text-xs font-medium rounded-full">
               Best-seller
             </span>
           )}
-          {selectedVariant?.promo_price && (
+          {selectedFormat?.originalPrice && (
             <span className="px-2.5 py-1 bg-rose-500 text-white text-xs font-medium rounded-full">
               Promo
             </span>
@@ -142,26 +142,26 @@ export function ProductCard({ product, className, showQuickAdd = true }: Product
 
         {/* Short Description */}
         <p className="text-sm text-stone-500 line-clamp-2 mb-3">
-          {product.short_description}
+          {product.shortDescription}
         </p>
 
-        {/* Variant Selection */}
-        {product.variants && product.variants.length > 0 && (
+        {/* Format Selection */}
+        {product.formats && product.formats.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-3">
-            {product.variants.map((variant) => (
+            {product.formats.map((format) => (
               <button
-                key={variant.id}
-                onClick={() => setSelectedVariant(variant)}
-                disabled={!variant.is_in_stock}
+                key={format.size}
+                onClick={() => setSelectedFormat(format)}
+                disabled={!format.inStock}
                 className={cn(
                   'px-2 py-1 text-xs rounded-md border transition-all',
-                  selectedVariant?.id === variant.id
+                  selectedFormat?.size === format.size
                     ? 'border-stone-900 bg-stone-900 text-white'
                     : 'border-stone-200 text-stone-600 hover:border-stone-400',
-                  !variant.is_in_stock && 'opacity-40 cursor-not-allowed'
+                  !format.inStock && 'opacity-40 cursor-not-allowed'
                 )}
               >
-                {variant.size}
+                {format.size}
               </button>
             ))}
           </div>
@@ -171,11 +171,11 @@ export function ProductCard({ product, className, showQuickAdd = true }: Product
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <span className="font-serif text-xl font-semibold text-stone-900">
-              {formatPrice(selectedVariant?.price || product.base_price || 0)}
+              {formatPrice(selectedFormat?.price || product.price || 0)}
             </span>
-            {selectedVariant?.promo_price && (
+            {selectedFormat?.originalPrice && (
               <span className="text-sm text-stone-400 line-through">
-                {formatPrice(selectedVariant.promo_price)}
+                {formatPrice(selectedFormat.originalPrice)}
               </span>
             )}
           </div>
@@ -184,7 +184,7 @@ export function ProductCard({ product, className, showQuickAdd = true }: Product
             <Button
               size="sm"
               onClick={handleQuickAdd}
-              disabled={isAdded || !selectedVariant?.is_in_stock}
+              disabled={isAdded || !selectedFormat?.inStock}
               className={cn(
                 'transition-all duration-300',
                 isAdded

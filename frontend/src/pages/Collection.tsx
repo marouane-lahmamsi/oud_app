@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X, Grid3X3, LayoutList } from 'lucide-react';
 import { Header } from '@/sections/Header';
 import { Footer } from '@/sections/Footer';
@@ -12,7 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { productsAPI } from '@/services/api';
-import type { Product, Category } from '@/types';
+import type { Product } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface Filters {
@@ -25,7 +25,6 @@ export function Collection() {
   const [searchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [filters, setFilters] = useState<Filters>({
     intensity: [],
     profile: [],
@@ -125,14 +124,7 @@ export function Collection() {
   // Fetch categories and filters
   useEffect(() => {
     const fetchData = async () => {
-      const [catsResult, filtersResult] = await Promise.all([
-        productsAPI.getCategories(),
-        productsAPI.getFilters(),
-      ]);
-
-      if (catsResult.success && catsResult.data) {
-        setCategories(catsResult.data);
-      }
+      const filtersResult = await productsAPI.getFilters();
 
       if (filtersResult.success && filtersResult.data) {
         setAvailableFilters(filtersResult.data);
