@@ -6,10 +6,16 @@ on:
     paths:
       - 'frontend/**'
       - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: true
 
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,32 +29,17 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ./frontend
-        run: |
-          echo "📦 Installing frontend dependencies..."
-          npm ci
-          echo "✅ Dependencies installed"
+        run: npm ci
 
       - name: Build Frontend
         working-directory: ./frontend
-        run: |
-          echo "🔨 Building frontend for production..."
-          npm run build
-          echo "✅ Build completed"
+        run: npm run build
 
       - name: Verify Build Output
         working-directory: ./frontend
         run: |
-          echo "📂 Verifying build output..."
-          ls -la dist/
-          if [ ! -f "dist/index.html" ]; then
-            echo "❌ index.html not found in build output"
-            exit 1
-          fi
-          if [ ! -d "dist/assets" ]; then
-            echo "❌ assets directory not found in build output"
-            exit 1
-          fi
-          echo "✅ Build output verified"
+          test -f dist/index.html
+          test -d dist/assets
 
       - name: Install SSH Key
         uses: shimataro/ssh-key-action@v2
@@ -60,7 +51,7 @@ jobs:
       - name: Add Host to Known Hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -p ${{ secrets.VPS_PORT }} -H ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts
+          ssh-keyscan -p "${{ secrets.VPS_PORT }}" -H "${{ secrets.VPS_IP }}" >> ~/.ssh/known_hosts
 
       - name: Deploy Frontend to VPS
         env:
@@ -68,76 +59,36 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
         run: |
-          echo "🚀 Deploying frontend to VPS..."
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" "mkdir -p /var/www/oud_app/frontend"
 
-          # Create frontend directory on VPS
-          ssh -p $VPS_PORT $VPS_USER@$VPS_IP "mkdir -p /var/www/oud_app/frontend"
-
-          # Sync built frontend files
           rsync -avz --delete \
             -e "ssh -p $VPS_PORT" \
-            ./frontend/dist/ $VPS_USER@$VPS_IP:/var/www/oud_app/frontend/
+            ./frontend/dist/ "$VPS_USER@$VPS_IP:/var/www/oud_app/frontend/"
 
-          echo "✅ Frontend deployed"
-
-      - name: Fix Permissions
+      - name: Fix Permissions and Reload Nginx
         env:
           VPS_IP: ${{ secrets.VPS_IP }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
         run: |
-          echo "🔧 Fixing permissions..."
-
-          ssh -p $VPS_PORT $VPS_USER@$VPS_IP << 'EOF'
-            # Set correct ownership for Nginx
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" << 'EOF'
+            set -e
             chown -R www-data:www-data /var/www/oud_app/frontend/
             chmod -R 755 /var/www/oud_app/frontend/
-
-            echo "✅ Permissions fixed"
-          EOF
-
-      - name: Reload Nginx
-        env:
-          VPS_IP: ${{ secrets.VPS_IP }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_PORT: ${{ secrets.VPS_PORT }}
-        run: |
-          echo "🔄 Reloading Nginx..."
-
-          ssh -p $VPS_PORT $VPS_USER@$VPS_IP << 'EOF'
-            # Test Nginx configuration
             nginx -t
-
-            # Reload Nginx
             systemctl reload nginx
-
-            echo "✅ Nginx reloaded"
           EOF
 
       - name: Verify Deployment
         env:
           VPS_IP: ${{ secrets.VPS_IP }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
         run: |
-          echo "🔍 Verifying frontend deployment..."
-
-          # Wait for Nginx to reload
           sleep 2
 
-          # Test frontend loading
-          FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$VPS_IP/oud/)
-          if [ "$FRONTEND_STATUS" = "200" ]; then
-            echo "✅ Frontend loads correctly (HTTP 200)"
-          else
-            echo "❌ Frontend returned HTTP $FRONTEND_STATUS"
-            exit 1
-          fi
-
-          # Test assets loading
-          JS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$VPS_IP/oud/assets/)
-          if [ "$JS_STATUS" = "200" ] || [ "$JS_STATUS" = "403" ]; then
-            echo "✅ Assets directory accessible"
-          else
-            echo "❌ Assets directory returned HTTP $JS_STATUS"
-          fi
-
-          echo "✅ Frontend deployment verified"
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" << 'EOF'
+            set -e
+            curl -fsS http://127.0.0.1/oud/ > /dev/null
+            curl -fsS http://127.0.0.1/oud/assets/ > /dev/null || true
+          EOF

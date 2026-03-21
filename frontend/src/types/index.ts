@@ -18,6 +18,7 @@ export interface ProductVariant {
 }
 
 export interface ProductFormat {
+  variantId?: number;
   size: string;
   price: number;
   originalPrice?: number;

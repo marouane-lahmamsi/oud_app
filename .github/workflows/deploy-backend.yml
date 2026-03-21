@@ -6,10 +6,16 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: true
 
 jobs:
   deploy-backend:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,7 +35,7 @@ jobs:
       - name: Add Host to Known Hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -p ${{ secrets.VPS_PORT }} -H ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts
+          ssh-keyscan -p "${{ secrets.VPS_PORT }}" -H "${{ secrets.VPS_IP }}" >> ~/.ssh/known_hosts
 
       - name: Deploy Backend to VPS
         env:
@@ -37,48 +43,36 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
         run: |
-          echo "🚀 Deploying backend to VPS..."
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" "mkdir -p /var/www/oud_app/backend"
 
-          # Create backend directory on VPS
-          ssh -p $VPS_PORT $VPS_USER@$VPS_IP "mkdir -p /var/www/oud_app/backend"
-
-          # Sync backend code (excluding venv and __pycache__)
           rsync -avz --delete \
             -e "ssh -p $VPS_PORT" \
             --exclude='venv' \
+            --exclude='.venv313' \
             --exclude='__pycache__' \
             --exclude='*.pyc' \
             --exclude='.idea' \
             --exclude='.git' \
             --exclude='instance/*.db' \
-            ./backend/ $VPS_USER@$VPS_IP:/var/www/oud_app/backend/
-
-          echo "✅ Backend code synced"
+            ./backend/ "$VPS_USER@$VPS_IP:/var/www/oud_app/backend/"
 
       - name: Setup Virtual Environment and Install Dependencies
         env:
           VPS_IP: ${{ secrets.VPS_IP }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
-          BACKEND_ENV_FILE: ${{ secrets.BACKEND_ENV_FILE }}
         run: |
-          echo "🐍 Setting up Python virtual environment..."
-
-          ssh -p $VPS_PORT $VPS_USER@$VPS_IP << 'EOF'
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" << 'EOF'
+            set -e
             cd /var/www/oud_app/backend
 
-            # Create virtual environment if it doesn't exist
             if [ ! -d "venv" ]; then
-              echo "Creating virtual environment..."
               python3 -m venv venv
             fi
 
-            # Activate and install dependencies
-            source venv/bin/activate
+            . venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
-
-            echo "✅ Dependencies installed"
           EOF
 
       - name: Write Environment File
@@ -88,12 +82,14 @@ jobs:
           VPS_PORT: ${{ secrets.VPS_PORT }}
           BACKEND_ENV_FILE: ${{ secrets.BACKEND_ENV_FILE }}
         run: |
-          echo "📝 Writing environment file..."
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" "mkdir -p /var/www/oud_app/backend"
 
-          # Write the .env file from GitHub secret
-          ssh -p $VPS_PORT $VPS_USER@$VPS_IP "echo '$BACKEND_ENV_FILE' > /var/www/oud_app/backend/.env"
-
-          echo "✅ Environment file written"
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" << EOF
+            cat > /var/www/oud_app/backend/.env << 'ENVEOF'
+$BACKEND_ENV_FILE
+ENVEOF
+            chmod 600 /var/www/oud_app/backend/.env
+          EOF
 
       - name: Restart Backend Service
         env:
@@ -101,31 +97,23 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
         run: |
-          echo "🔄 Restarting backend service..."
-
-          ssh -p $VPS_PORT $VPS_USER@$VPS_IP << 'EOF'
-            # Reload systemd and restart service
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" << 'EOF'
+            set -e
             systemctl daemon-reload
             systemctl restart oud-backend
             systemctl status oud-backend --no-pager
-
-            echo "✅ Backend service restarted"
           EOF
 
       - name: Verify Deployment
         env:
           VPS_IP: ${{ secrets.VPS_IP }}
+          VPS_USER: ${{ secrets.VPS_USER }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
         run: |
-          echo "🔍 Verifying backend deployment..."
-
-          # Wait for service to start
           sleep 3
 
-          # Test health endpoint locally on VPS
-          ssh -p $VPS_PORT root@$VPS_IP "curl -s http://127.0.0.1:5001/health"
-
-          # Test API endpoint through Nginx
-          curl -s -o /dev/null -w "%{http_code}" http://$VPS_IP/oud/api/v1/products/ | grep 200 && echo " ✅ API responding" || echo " ❌ API not responding"
-
-          echo "✅ Backend deployment verified"
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" << 'EOF'
+            set -e
+            curl -fsS http://127.0.0.1:5001/health
+            curl -fsS http://127.0.0.1/oud/api/v1/products/ > /dev/null
+          EOF

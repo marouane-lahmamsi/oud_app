@@ -1,6 +1,123 @@
 import type { Product, Category, Order, Customer } from '@/types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+const RAW_API_BASE_URL = (import.meta.env.VITE_API_URL || '').trim();
+const DEFAULT_LOCAL_API = 'http://localhost:5000/api/v1';
+const APP_BASE_URL = import.meta.env.BASE_URL || '/';
+const IS_LOCALHOST =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+const API_BASE_URL =
+  RAW_API_BASE_URL.startsWith('http://') || RAW_API_BASE_URL.startsWith('https://')
+    ? RAW_API_BASE_URL
+    : IS_LOCALHOST
+      ? DEFAULT_LOCAL_API
+      : (RAW_API_BASE_URL || DEFAULT_LOCAL_API);
+
+type ApiProductVariant = {
+  id?: number;
+  size: string;
+  price: number;
+  promo_price?: number | null;
+  is_in_stock?: boolean;
+};
+
+type ApiProduct = {
+  id: number | string;
+  name: string;
+  slug: string;
+  description?: string;
+  short_description?: string;
+  base_price?: number;
+  base_promo_price?: number | null;
+  image_url?: string;
+  additional_images?: string[];
+  category?: { slug?: string } | string | null;
+  intensity?: string;
+  profile?: string;
+  origin?: string;
+  grade?: string;
+  rating?: number;
+  review_count?: number;
+  is_bestseller?: boolean;
+  is_new?: boolean;
+  tags?: string[];
+  variants?: ApiProductVariant[];
+};
+
+function toMediaUrl(path?: string): string {
+  if (!path) return `${APP_BASE_URL}images/placeholder.jpg`;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('/images/')) {
+    return `${APP_BASE_URL.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+  }
+  return path;
+}
+
+function mapProduct(apiProduct: ApiProduct): Product {
+  const variants = (apiProduct.variants || []).map((variant) => ({
+    variantId: variant.id,
+    size: variant.size,
+    price: variant.promo_price ?? variant.price,
+    originalPrice: variant.promo_price ? variant.price : undefined,
+    inStock: variant.is_in_stock ?? true,
+  }));
+
+  const fallbackPrice = apiProduct.base_promo_price ?? apiProduct.base_price ?? 0;
+  const formats = variants.length > 0
+    ? variants
+    : [{
+        size: 'Standard',
+        price: fallbackPrice,
+        originalPrice: apiProduct.base_promo_price ? apiProduct.base_price : undefined,
+        inStock: true,
+      }];
+
+  const primaryImage = toMediaUrl(apiProduct.image_url);
+  const gallery = (apiProduct.additional_images || []).map((img) => toMediaUrl(img));
+  const images = Array.from(new Set([primaryImage, ...gallery].filter(Boolean)));
+
+  return {
+    id: String(apiProduct.id),
+    name: apiProduct.name,
+    slug: apiProduct.slug,
+    description: apiProduct.description || '',
+    shortDescription: apiProduct.short_description || '',
+    price: fallbackPrice,
+    originalPrice: apiProduct.base_promo_price ? apiProduct.base_price : undefined,
+    images: images.length > 0 ? images : [`${APP_BASE_URL}images/placeholder.jpg`],
+    category: typeof apiProduct.category === 'string'
+      ? apiProduct.category
+      : (apiProduct.category?.slug || ''),
+    intensity: (apiProduct.intensity as Product['intensity']) || 'medium',
+    profile: (apiProduct.profile as Product['profile']) || 'boise',
+    occasion: [],
+    formats,
+    origin: apiProduct.origin || '',
+    grade: (apiProduct.grade as Product['grade']) || 'premium',
+    rating: apiProduct.rating || 0,
+    reviewCount: apiProduct.review_count || 0,
+    inStock: formats.some((format) => format.inStock),
+    isBestseller: Boolean(apiProduct.is_bestseller),
+    isNew: Boolean(apiProduct.is_new),
+    tags: apiProduct.tags || [],
+    details: {
+      origin: apiProduct.origin || '',
+      woodType: '',
+      aging: '',
+      oilContent: '',
+      burningTime: '',
+      intensity: 0,
+    },
+    usage: {
+      preparation: '',
+      burning: '',
+      tips: [],
+      safety: [],
+    },
+    faq: [],
+  };
+}
 
 // Helper for API requests
 async function fetchAPI<T>(
@@ -16,12 +133,22 @@ async function fetchAPI<T>(
       ...options,
     });
 
-    const result = await response.json();
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    const result = isJson ? await response.json() : null;
+    const textBody = !isJson ? await response.text() : '';
 
     if (!response.ok) {
       return {
         success: false,
-        error: result.error || `HTTP ${response.status}`,
+        error: result?.error || textBody || `HTTP ${response.status}`,
+      };
+    }
+
+    if (!isJson) {
+      return {
+        success: false,
+        error: `Expected JSON response but received ${contentType || 'non-JSON content'}`,
       };
     }
 
@@ -49,15 +176,55 @@ export const productsAPI = {
     is_bestseller?: boolean;
     is_new?: boolean;
     search?: string;
-  }) => fetchAPI<{ data: Product[]; pagination: any }>(`/products/?${new URLSearchParams(params as any).toString()}`),
+  }) => fetchAPI<{ data: ApiProduct[]; pagination: any }>(`/products/?${new URLSearchParams(params as any).toString()}`)
+    .then((result) => {
+      if (!result.success || !result.data) return result as any;
+      if (Array.isArray(result.data)) {
+        return {
+          ...result,
+          data: result.data.map(mapProduct),
+        };
+      }
+      return {
+        ...result,
+        data: {
+          ...result.data,
+          data: Array.isArray((result.data as any).data)
+            ? (result.data as any).data.map(mapProduct)
+            : [],
+        },
+      };
+    }),
 
-  getBySlug: (slug: string) => fetchAPI<{ product: Product; related_products: Product[] }>(`/products/${slug}`),
+  getBySlug: (slug: string) => fetchAPI<{ product: ApiProduct; related_products: ApiProduct[] }>(`/products/${slug}`)
+    .then((result) => {
+      if (!result.success || !result.data) return result as any;
+      return {
+        ...result,
+        data: {
+          product: mapProduct(result.data.product),
+          related_products: (result.data.related_products || []).map(mapProduct),
+        },
+      };
+    }),
 
-  getFeatured: (limit = 4) => fetchAPI<Product[]>(`/products/featured?limit=${limit}`),
+  getFeatured: (limit = 4) => fetchAPI<ApiProduct[]>(`/products/featured?limit=${limit}`)
+    .then((result) => {
+      if (!result.success || !result.data) return result as any;
+      return { ...result, data: result.data.map(mapProduct) };
+    }),
 
-  getBestsellers: (limit = 4) => fetchAPI<Product[]>(`/products/bestsellers?limit=${limit}`),
+  getBestsellers: (limit = 4) => fetchAPI<ApiProduct[]>(`/products/bestsellers?limit=${limit}`)
+    .then((result) => {
+      if (!result.success || !result.data) return result as any;
+      return { ...result, data: result.data.map(mapProduct) };
+    }),
 
-  getNew: (limit = 4) => fetchAPI<Product[]>(`/products/new?limit=${limit}`),
+  getNew: (limit = 4) => fetchAPI<ApiProduct[]>(`/products/new?limit=${limit}`)
+    .then((result) => {
+      if (!result.success || !result.data) return result as any;
+      return { ...result, data: result.data.map(mapProduct) };
+    }),
 
   getCategories: () => fetchAPI<Category[]>('/products/categories'),
 
@@ -73,7 +240,7 @@ export const ordersAPI = {
     promo_code?: string;
     payment_method?: string;
     notes?: string;
-  }) => fetchAPI<Order>('/orders', {
+  }) => fetchAPI<Order>('/orders/', {
     method: 'POST',
     body: JSON.stringify(orderData),
   }),
@@ -102,13 +269,25 @@ export const publicAPI = {
   }>('/config'),
 
   getHomepage: () => fetchAPI<{
-    featured_products: Product[];
-    bestsellers: Product[];
-    new_arrivals: Product[];
+    featured_products: ApiProduct[];
+    bestsellers: ApiProduct[];
+    new_arrivals: ApiProduct[];
     promotions: any[];
     features: Record<string, any>;
     homepage_sections: any[];
-  }>('/homepage'),
+  }>('/homepage')
+    .then((result) => {
+      if (!result.success || !result.data) return result as any;
+      return {
+        ...result,
+        data: {
+          ...result.data,
+          featured_products: (result.data.featured_products || []).map(mapProduct),
+          bestsellers: (result.data.bestsellers || []).map(mapProduct),
+          new_arrivals: (result.data.new_arrivals || []).map(mapProduct),
+        },
+      };
+    }),
 };
 
 // Customers API

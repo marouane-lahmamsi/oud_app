@@ -62,7 +62,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           id: `${product.id}-${format.size}-${Date.now()}`,
           product,
           variant: {
-            id: Date.now(),
+            id: format.variantId || Date.now(),
             product_id: parseInt(product.id.replace(/\D/g, '')) || 0,
             size: format.size,
             sku: `${product.slug}-${format.size}`,

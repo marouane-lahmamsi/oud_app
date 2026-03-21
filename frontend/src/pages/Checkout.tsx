@@ -172,7 +172,7 @@ export function Checkout() {
                 className="w-full bg-stone-900 hover:bg-stone-800 py-6"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Traitement...' : `Commander - ${formatPrice(cart.total - promoDiscount)}`}
+                {isSubmitting ? 'Traitement...' : `Commander ${formatPrice(cart.total - promoDiscount)}`}
               </Button>
             </form>
 
