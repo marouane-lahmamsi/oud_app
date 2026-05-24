@@ -12,6 +12,7 @@ from app.models.product import Category, Product, ProductVariant
 
 admin_bp = Blueprint('admin', __name__)
 ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp', '.gif'}
+MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024
 
 
 def slugify(value):
@@ -206,6 +207,20 @@ def build_public_uploaded_url(file_name):
     public_prefix = public_prefix.rstrip('/')
 
     return f'{public_prefix}{api_prefix}/admin/uploads/files/{file_name}'
+
+
+def validate_uploaded_image_size(image):
+    """Reject files larger than 10MB while allowing multipart overhead in request."""
+    size = getattr(image, 'content_length', None)
+    if size is None:
+        stream = image.stream
+        current_pos = stream.tell()
+        stream.seek(0, 2)
+        size = stream.tell()
+        stream.seek(current_pos)
+
+    if size and size > MAX_IMAGE_UPLOAD_BYTES:
+        raise ValueError('Image too large. Maximum size is 10MB.')
 
 
 def product_admin_dict(product):
@@ -403,6 +418,7 @@ def upload_product_image():
         return jsonify({'success': False, 'error': 'image file is required'}), 400
 
     try:
+        validate_uploaded_image_size(image)
         file_name = build_image_filename(image.filename, request.form.get('slug', ''))
         upload_dir = get_persistent_upload_directory()
         destination = upload_dir / file_name

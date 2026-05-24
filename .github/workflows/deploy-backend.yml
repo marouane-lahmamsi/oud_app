@@ -112,6 +112,19 @@ jobs:
         run: |
           ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" << 'EOF'
             set -e
+            if [ "$(id -u)" -eq 0 ]; then
+              SUDO=""
+            else
+              SUDO="sudo"
+            fi
+
+            cat > /tmp/oud-upload-limit.conf << 'CONF'
+client_max_body_size 12M;
+CONF
+            $SUDO mv /tmp/oud-upload-limit.conf /etc/nginx/conf.d/oud-upload-limit.conf
+            $SUDO nginx -t
+            $SUDO systemctl reload nginx
+
             systemctl daemon-reload
             systemctl restart oud-backend
             systemctl status oud-backend --no-pager
