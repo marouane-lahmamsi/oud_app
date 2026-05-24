@@ -86,7 +86,23 @@ jobs:
           BACKEND_ENV_FILE: ${{ secrets.BACKEND_ENV_FILE }}
         run: |
           ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" "mkdir -p /var/www/oud_app/backend"
-          printf '%s\n' "$BACKEND_ENV_FILE" | ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" "cat > /var/www/oud_app/backend/.env && chmod 600 /var/www/oud_app/backend/.env"
+          printf '%s\n' "$BACKEND_ENV_FILE" | ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" "cat > /var/www/oud_app/backend/.env"
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" << 'EOF'
+            set -e
+            SERVICE_USER="$(systemctl show -p User --value oud-backend | tr -d '[:space:]')"
+            SERVICE_GROUP="$(systemctl show -p Group --value oud-backend | tr -d '[:space:]')"
+
+            if [ -z "$SERVICE_USER" ]; then
+              SERVICE_USER="root"
+            fi
+
+            if [ -z "$SERVICE_GROUP" ]; then
+              SERVICE_GROUP="$(id -gn "$SERVICE_USER")"
+            fi
+
+            chown "$SERVICE_USER:$SERVICE_GROUP" /var/www/oud_app/backend/.env
+            chmod 640 /var/www/oud_app/backend/.env
+          EOF
 
       - name: Restart Backend Service
         env:
@@ -107,10 +123,23 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
         run: |
-          sleep 3
-
           ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" << 'EOF'
             set -e
-            curl -fsS http://127.0.0.1:5001/health
+            HEALTH_OK=0
+            for attempt in $(seq 1 15); do
+              if curl -fsS http://127.0.0.1:5001/health > /dev/null; then
+                HEALTH_OK=1
+                break
+              fi
+              sleep 2
+            done
+
+            if [ "$HEALTH_OK" -ne 1 ]; then
+              echo "Backend health check failed after retries."
+              systemctl status oud-backend --no-pager || true
+              journalctl -u oud-backend -n 80 --no-pager || true
+              exit 1
+            fi
+
             curl -fsS http://127.0.0.1/oud/api/v1/products/ > /dev/null
           EOF

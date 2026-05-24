@@ -35,6 +35,7 @@ def create_app(config_name='default'):
     from app.routes.customers import customers_bp
     from app.routes.promotions import promotions_bp
     from app.routes.public import public_bp
+    from app.routes.admin import admin_bp
     
     api_prefix = app.config['API_PREFIX']
     
@@ -43,6 +44,7 @@ def create_app(config_name='default'):
     app.register_blueprint(customers_bp, url_prefix=f'{api_prefix}/customers')
     app.register_blueprint(promotions_bp, url_prefix=f'{api_prefix}/promotions')
     app.register_blueprint(public_bp, url_prefix=f'{api_prefix}')
+    app.register_blueprint(admin_bp, url_prefix=f'{api_prefix}/admin')
     
     # Health check endpoint
     @app.route('/health')

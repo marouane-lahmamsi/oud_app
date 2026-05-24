@@ -1,0 +1,868 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Produits</title>
+    <style>
+        :root {
+            --surface: #fffaf4;
+            --surface-strong: #ffffff;
+            --text: #2d2016;
+            --muted: #7b6654;
+            --accent-dark: #6d441d;
+            --border: #dcc9b5;
+            --danger: #9d3f3f;
+            --success: #2f7a4b;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Georgia, "Times New Roman", serif;
+            background: linear-gradient(180deg, #f9f4ed 0%, #efe3d3 100%);
+            color: var(--text);
+        }
+
+        .page {
+            width: min(1400px, 100%);
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .hero {
+            margin-bottom: 20px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            background: rgba(255, 250, 244, 0.85);
+            border-radius: 18px;
+        }
+
+        .hero h1 {
+            margin: 0 0 8px;
+            font-size: clamp(28px, 4vw, 42px);
+            color: var(--accent-dark);
+        }
+
+        .hero p { margin: 0; color: var(--muted); line-height: 1.6; }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+            gap: 20px;
+            align-items: start;
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: 0 14px 40px rgba(90, 58, 26, 0.08);
+        }
+
+        .panel-header { padding: 18px 20px; border-bottom: 1px solid var(--border); }
+        .panel-header h2 { margin: 0; font-size: 22px; color: var(--accent-dark); }
+        .panel-body { padding: 18px 20px 20px; }
+
+        .toolbar, .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .status { margin-top: 10px; min-height: 24px; font-size: 14px; }
+        .status.success { color: var(--success); }
+        .status.error { color: var(--danger); }
+
+        .search {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font: inherit;
+            background: var(--surface-strong);
+        }
+
+        .products-list {
+            display: grid;
+            gap: 12px;
+            max-height: 70vh;
+            overflow: auto;
+            padding-right: 4px;
+        }
+
+        .product-card {
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: #fff;
+        }
+
+        .product-card.inactive { opacity: 0.7; border-style: dashed; }
+        .product-card h3 { margin: 0 0 6px; font-size: 18px; }
+        .product-meta { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+
+        .product-flags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .badge {
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            background: #fbf5ee;
+        }
+
+        form { display: grid; gap: 18px; }
+
+        .grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .field, .full { display: grid; gap: 8px; }
+        .full { grid-column: 1 / -1; }
+
+        label {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent-dark);
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface-strong);
+            color: var(--text);
+            font: inherit;
+        }
+
+        textarea { min-height: 90px; resize: vertical; }
+
+        .checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 18px;
+        }
+
+        .checkbox {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .checkbox input { width: auto; margin: 0; }
+
+        .choice-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+        }
+
+        .inline-upload {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+        }
+
+        .custom-input { display: none; }
+        .custom-input.active { display: block; }
+
+        .variants { display: grid; gap: 12px; }
+
+        .variant-card {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            background: #fff;
+        }
+
+        .variant-grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+
+        button {
+            border: none;
+            border-radius: 12px;
+            padding: 11px 16px;
+            font: inherit;
+            cursor: pointer;
+            transition: transform 0.15s ease, opacity 0.15s ease;
+        }
+
+        button:hover { transform: translateY(-1px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-primary { background: var(--accent-dark); color: #fff; }
+        .btn-secondary { background: #eadbc9; color: var(--text); }
+        .btn-danger { background: #f5d7d7; color: var(--danger); }
+        .btn-link { background: transparent; color: var(--accent-dark); padding-inline: 0; }
+
+        .hint { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+        @media (max-width: 1100px) {
+            .layout { grid-template-columns: 1fr; }
+            .products-list { max-height: none; }
+        }
+
+        @media (max-width: 760px) {
+            .grid, .variant-grid, .choice-row, .inline-upload { grid-template-columns: 1fr; }
+            .page { padding: 14px; }
+            .hero, .panel-body, .panel-header { padding-left: 16px; padding-right: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <section class="hero">
+            <h1>Administration Produits</h1>
+            <p>
+                Tu peux uploader les images directement ici. Pour les parametres (origine, grade, intensite, profil),
+                choisis une valeur existante ou clique sur "Ajouter".
+            </p>
+        </section>
+
+        <div class="layout">
+            <aside class="panel">
+                <div class="panel-header">
+                    <h2>Produits existants</h2>
+                </div>
+                <div class="panel-body">
+                    <div class="toolbar">
+                        <input id="searchInput" class="search" type="search" placeholder="Rechercher par nom, slug ou origine">
+                        <button id="refreshButton" class="btn-secondary" type="button">Actualiser</button>
+                    </div>
+                    <div id="listStatus" class="status"></div>
+                    <div id="productsList" class="products-list"></div>
+                </div>
+            </aside>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 id="formTitle">Creer un produit</h2>
+                </div>
+                <div class="panel-body">
+                    <form id="productForm">
+                        <div class="grid">
+                            <div class="field">
+                                <label for="name">Nom</label>
+                                <input id="name" name="name" required>
+                            </div>
+                            <div class="field">
+                                <label for="slug">Slug</label>
+                                <input id="slug" name="slug" placeholder="auto si vide">
+                            </div>
+
+                            <div class="field">
+                                <label for="category_id">Categorie</label>
+                                <div class="choice-row">
+                                    <select id="category_id" name="category_id"></select>
+                                    <button id="addCategoryButton" class="btn-secondary" type="button">Ajouter</button>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label for="origin_select">Origine</label>
+                                <div class="choice-row">
+                                    <select id="origin_select"></select>
+                                    <button class="btn-secondary" type="button" data-param-add="origin">Ajouter</button>
+                                </div>
+                                <input id="origin_custom" class="custom-input" placeholder="Nouvelle origine">
+                            </div>
+
+                            <div class="field">
+                                <label for="grade_select">Grade</label>
+                                <div class="choice-row">
+                                    <select id="grade_select"></select>
+                                    <button class="btn-secondary" type="button" data-param-add="grade">Ajouter</button>
+                                </div>
+                                <input id="grade_custom" class="custom-input" placeholder="Nouveau grade">
+                            </div>
+
+                            <div class="field">
+                                <label for="intensity_select">Intensite</label>
+                                <div class="choice-row">
+                                    <select id="intensity_select"></select>
+                                    <button class="btn-secondary" type="button" data-param-add="intensity">Ajouter</button>
+                                </div>
+                                <input id="intensity_custom" class="custom-input" placeholder="Nouvelle intensite">
+                            </div>
+
+                            <div class="field">
+                                <label for="profile_select">Profil olfactif</label>
+                                <div class="choice-row">
+                                    <select id="profile_select"></select>
+                                    <button class="btn-secondary" type="button" data-param-add="profile">Ajouter</button>
+                                </div>
+                                <input id="profile_custom" class="custom-input" placeholder="Nouveau profil">
+                            </div>
+
+                            <div class="field">
+                                <label for="image_url_local">Image principale (url)</label>
+                                <input id="image_url_local" name="image_url_local" placeholder="/images/products/nom-image.jpg">
+                                <div class="inline-upload">
+                                    <input id="mainImageFile" type="file" accept="image/*">
+                                    <button id="uploadMainImageButton" class="btn-secondary" type="button">Uploader</button>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label for="rating">Note</label>
+                                <input id="rating" name="rating" type="number" step="0.1" min="0" max="5" value="5">
+                            </div>
+
+                            <div class="field">
+                                <label for="review_count">Nombre d'avis</label>
+                                <input id="review_count" name="review_count" type="number" min="0" value="0">
+                            </div>
+                            <div class="full">
+                                <label for="short_description">Description courte</label>
+                                <textarea id="short_description" name="short_description"></textarea>
+                            </div>
+
+                            <div class="full">
+                                <label for="description">Description longue</label>
+                                <textarea id="description" name="description"></textarea>
+                            </div>
+
+                            <div class="full">
+                                <label for="additional_images">Images additionnelles (urls)</label>
+                                <textarea id="additional_images" name="additional_images" placeholder="/images/products/photo-2.jpg"></textarea>
+                                <div class="inline-upload">
+                                    <input id="additionalImageFiles" type="file" accept="image/*" multiple>
+                                    <button id="uploadAdditionalImagesButton" class="btn-secondary" type="button">Uploader</button>
+                                </div>
+                            </div>
+
+                            <div class="full">
+                                <label for="tags">Tags (separes par virgule)</label>
+                                <input id="tags" name="tags" list="tagsList" placeholder="premium, cambodge, boise">
+                                <datalist id="tagsList"></datalist>
+                            </div>
+
+                            <div class="full">
+                                <label for="meta_title">Meta title</label>
+                                <input id="meta_title" name="meta_title">
+                            </div>
+
+                            <div class="full">
+                                <label for="meta_description">Meta description</label>
+                                <textarea id="meta_description" name="meta_description"></textarea>
+                            </div>
+
+                            <div class="full">
+                                <label>Etat et mise en avant</label>
+                                <div class="checkboxes">
+                                    <label class="checkbox"><input id="is_active" name="is_active" type="checkbox" checked> Actif</label>
+                                    <label class="checkbox"><input id="is_featured" name="is_featured" type="checkbox"> Mis en avant</label>
+                                    <label class="checkbox"><input id="is_bestseller" name="is_bestseller" type="checkbox"> Bestseller</label>
+                                    <label class="checkbox"><input id="is_new" name="is_new" type="checkbox"> Nouveau</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="toolbar" style="justify-content: space-between;">
+                                <label>Variants</label>
+                                <button id="addVariantButton" class="btn-secondary" type="button">Ajouter un variant</button>
+                            </div>
+                            <p class="hint">Au moins un variant est obligatoire. Le SKU est genere automatiquement.</p>
+                            <div id="variantsContainer" class="variants"></div>
+                        </div>
+
+                        <div class="actions">
+                            <button id="saveButton" class="btn-primary" type="submit">Enregistrer</button>
+                            <button id="newButton" class="btn-secondary" type="button">Nouveau produit</button>
+                            <button id="toggleActiveButton" class="btn-danger" type="button" hidden>Desactiver</button>
+                        </div>
+                        <div id="formStatus" class="status"></div>
+                        <p class="hint">
+                            Note: les images upload sont maintenant stockees cote backend (stockage persistant) et restent affichees sur le site.
+                        </p>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <template id="variantTemplate">
+        <div class="variant-card">
+            <div class="variant-grid">
+                <div class="field">
+                    <label>Taille</label>
+                    <input data-field="size" placeholder="10g">
+                </div>
+                <div class="field">
+                    <label>Prix</label>
+                    <input data-field="price" type="number" min="0" step="0.01" placeholder="450">
+                </div>
+                <div class="field">
+                    <label>Prix promo</label>
+                    <input data-field="promo_price" type="number" min="0" step="0.01" placeholder="optionnel">
+                </div>
+                <div class="field">
+                    <label>Stock</label>
+                    <input data-field="stock_qty" type="number" min="0" step="1" value="0">
+                </div>
+                <div class="field">
+                    <label>Etat</label>
+                    <div class="checkboxes">
+                        <label class="checkbox"><input data-field="is_active" type="checkbox" checked> Actif</label>
+                        <label class="checkbox"><input data-field="is_default" type="checkbox"> Par defaut</label>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-link" type="button" data-action="remove-variant">Retirer ce variant</button>
+        </div>
+    </template>
+
+    <script>
+        const adminBase = window.location.pathname.replace(/\/products\/ui\/?$/, '');
+        const productsEndpoint = `${adminBase}/products`;
+        const categoriesEndpoint = `${adminBase}/categories`;
+        const optionsEndpoint = `${adminBase}/product-options`;
+        const uploadEndpoint = `${adminBase}/uploads/image`;
+
+        const state = {
+            products: [],
+            categories: [],
+            options: { origins: [], grades: [], intensities: [], profiles: [], tags: [] },
+            currentProductId: null
+        };
+
+        const elements = {
+            productForm: document.getElementById('productForm'),
+            formTitle: document.getElementById('formTitle'),
+            formStatus: document.getElementById('formStatus'),
+            listStatus: document.getElementById('listStatus'),
+            productsList: document.getElementById('productsList'),
+            categorySelect: document.getElementById('category_id'),
+            originSelect: document.getElementById('origin_select'),
+            gradeSelect: document.getElementById('grade_select'),
+            intensitySelect: document.getElementById('intensity_select'),
+            profileSelect: document.getElementById('profile_select'),
+            variantsContainer: document.getElementById('variantsContainer'),
+            addVariantButton: document.getElementById('addVariantButton'),
+            addCategoryButton: document.getElementById('addCategoryButton'),
+            newButton: document.getElementById('newButton'),
+            toggleActiveButton: document.getElementById('toggleActiveButton'),
+            refreshButton: document.getElementById('refreshButton'),
+            searchInput: document.getElementById('searchInput'),
+            saveButton: document.getElementById('saveButton'),
+            tagsList: document.getElementById('tagsList'),
+            uploadMainImageButton: document.getElementById('uploadMainImageButton'),
+            uploadAdditionalImagesButton: document.getElementById('uploadAdditionalImagesButton')
+        };
+
+        function setStatus(target, message = '', type = '') {
+            target.textContent = message;
+            target.className = `status ${type}`.trim();
+        }
+
+        function slugify(value) {
+            return (value || '')
+                .toString()
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        }
+
+        function parseTags(value) {
+            return (value || '').split(/\n|,/).map((item) => item.trim()).filter(Boolean);
+        }
+
+        function normalizeUploadedUrl(url) {
+            if (!url) return url;
+            if (url.startsWith('/api/') && window.location.pathname.startsWith('/oud/')) {
+                return `/oud${url}`;
+            }
+            return url;
+        }
+
+        function toggleCustomInput(fieldName, forceVisible = null) {
+            const input = document.getElementById(`${fieldName}_custom`);
+            if (!input) return;
+            const shouldShow = forceVisible === null ? !input.classList.contains('active') : forceVisible;
+            input.classList.toggle('active', shouldShow);
+            if (shouldShow) input.focus();
+        }
+
+        function currentFieldValue(fieldName) {
+            const select = document.getElementById(`${fieldName}_select`);
+            const customInput = document.getElementById(`${fieldName}_custom`);
+            if (customInput.classList.contains('active') && customInput.value.trim()) {
+                return customInput.value.trim();
+            }
+            return (select.value || '').trim() || null;
+        }
+
+        function setFieldValue(fieldName, value, knownValues = []) {
+            const select = document.getElementById(`${fieldName}_select`);
+            const customInput = document.getElementById(`${fieldName}_custom`);
+            const cleanValue = (value || '').trim();
+            const exists = cleanValue && knownValues.includes(cleanValue);
+            if (exists || !cleanValue) {
+                select.value = cleanValue;
+                customInput.value = '';
+                customInput.classList.remove('active');
+            } else {
+                select.value = '';
+                customInput.value = cleanValue;
+                customInput.classList.add('active');
+            }
+        }
+
+        function renderSelectOptions(select, values, placeholder) {
+            const cleanValues = [...new Set((values || []).map((item) => String(item).trim()).filter(Boolean))];
+            select.innerHTML = `<option value="">${placeholder}</option>` + cleanValues.map((item) => `<option value="${item}">${item}</option>`).join('');
+        }
+
+        function createVariantCard(variant = {}) {
+            const fragment = document.getElementById('variantTemplate').content.cloneNode(true);
+            const card = fragment.querySelector('.variant-card');
+            card.querySelector('[data-field="size"]').value = variant.size || '';
+            card.querySelector('[data-field="price"]').value = variant.price ?? '';
+            card.querySelector('[data-field="promo_price"]').value = variant.promo_price ?? '';
+            card.querySelector('[data-field="stock_qty"]').value = variant.stock_qty ?? 0;
+            card.querySelector('[data-field="is_active"]').checked = variant.is_active !== false;
+            card.querySelector('[data-field="is_default"]').checked = Boolean(variant.is_default);
+            card.querySelector('[data-action="remove-variant"]').addEventListener('click', () => {
+                card.remove();
+                if (!elements.variantsContainer.children.length) createDefaultVariant();
+            });
+            elements.variantsContainer.appendChild(card);
+        }
+
+        function createDefaultVariant() {
+            createVariantCard({ size: '10g', stock_qty: 0, is_active: true, is_default: !elements.variantsContainer.children.length });
+        }
+
+        async function fetchJson(url, options = {}) {
+            const isFormData = options.body instanceof FormData;
+            const headers = isFormData ? { ...(options.headers || {}) } : { 'Content-Type': 'application/json', ...(options.headers || {}) };
+            const response = await fetch(url, { ...options, headers });
+            const text = await response.text();
+            let data;
+            try {
+                data = text ? JSON.parse(text) : {};
+            } catch (error) {
+                throw new Error(`Reponse invalide du serveur: ${text.slice(0, 120)}`);
+            }
+            if (!response.ok || data.success === false) {
+                throw new Error(data.error || data.message || `Erreur HTTP ${response.status}`);
+            }
+            return data;
+        }
+
+        function getFormPayload() {
+            const formData = new FormData(elements.productForm);
+            const variants = [...elements.variantsContainer.querySelectorAll('.variant-card')].map((card) => ({
+                size: card.querySelector('[data-field="size"]').value.trim(),
+                price: card.querySelector('[data-field="price"]').value,
+                promo_price: card.querySelector('[data-field="promo_price"]').value,
+                stock_qty: card.querySelector('[data-field="stock_qty"]').value,
+                is_active: card.querySelector('[data-field="is_active"]').checked,
+                is_default: card.querySelector('[data-field="is_default"]').checked
+            }));
+
+            return {
+                name: formData.get('name')?.trim(),
+                slug: formData.get('slug')?.trim() || slugify(formData.get('name')),
+                category_id: formData.get('category_id') || null,
+                origin: currentFieldValue('origin'),
+                grade: currentFieldValue('grade'),
+                intensity: currentFieldValue('intensity'),
+                profile: currentFieldValue('profile'),
+                image_url_local: formData.get('image_url_local')?.trim(),
+                description: formData.get('description')?.trim(),
+                short_description: formData.get('short_description')?.trim(),
+                additional_images: (formData.get('additional_images') || '').split(/\n|,/).map((item) => item.trim()).filter(Boolean),
+                tags: parseTags(formData.get('tags')),
+                meta_title: formData.get('meta_title')?.trim(),
+                meta_description: formData.get('meta_description')?.trim(),
+                rating: formData.get('rating'),
+                review_count: formData.get('review_count'),
+                is_active: document.getElementById('is_active').checked,
+                is_featured: document.getElementById('is_featured').checked,
+                is_bestseller: document.getElementById('is_bestseller').checked,
+                is_new: document.getElementById('is_new').checked,
+                variants
+            };
+        }
+
+        function resetForm() {
+            state.currentProductId = null;
+            elements.productForm.reset();
+            document.getElementById('rating').value = 5;
+            document.getElementById('review_count').value = 0;
+            document.getElementById('is_active').checked = true;
+            elements.variantsContainer.innerHTML = '';
+            createDefaultVariant();
+            setFieldValue('origin', '', state.options.origins || []);
+            setFieldValue('grade', '', state.options.grades || []);
+            setFieldValue('intensity', '', state.options.intensities || []);
+            setFieldValue('profile', '', state.options.profiles || []);
+            elements.formTitle.textContent = 'Creer un produit';
+            elements.toggleActiveButton.hidden = true;
+            setStatus(elements.formStatus);
+        }
+
+        function fillForm(product) {
+            state.currentProductId = product.id;
+            elements.formTitle.textContent = `Modifier: ${product.name}`;
+            document.getElementById('name').value = product.name || '';
+            document.getElementById('slug').value = product.slug || '';
+            document.getElementById('category_id').value = product.category_id || '';
+            setFieldValue('origin', product.origin || '', state.options.origins || []);
+            setFieldValue('grade', product.grade || '', state.options.grades || []);
+            setFieldValue('intensity', product.intensity || '', state.options.intensities || []);
+            setFieldValue('profile', product.profile || '', state.options.profiles || []);
+            document.getElementById('image_url_local').value = product.image_url || product.image_url_local || '';
+            document.getElementById('description').value = product.description || '';
+            document.getElementById('short_description').value = product.short_description || '';
+            document.getElementById('additional_images').value = (product.additional_images || []).join('\n');
+            document.getElementById('tags').value = (product.tags || []).join(', ');
+            document.getElementById('meta_title').value = product.meta_title || '';
+            document.getElementById('meta_description').value = product.meta_description || '';
+            document.getElementById('rating').value = product.rating ?? 5;
+            document.getElementById('review_count').value = product.review_count ?? 0;
+            document.getElementById('is_active').checked = Boolean(product.is_active);
+            document.getElementById('is_featured').checked = Boolean(product.is_featured);
+            document.getElementById('is_bestseller').checked = Boolean(product.is_bestseller);
+            document.getElementById('is_new').checked = Boolean(product.is_new);
+
+            elements.variantsContainer.innerHTML = '';
+            (product.variants || []).forEach((variant) => createVariantCard(variant));
+            if (!elements.variantsContainer.children.length) createDefaultVariant();
+
+            elements.toggleActiveButton.hidden = false;
+            elements.toggleActiveButton.textContent = product.is_active ? 'Desactiver' : 'Reactiver';
+            setStatus(elements.formStatus);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderProducts() {
+            const filter = elements.searchInput.value.trim().toLowerCase();
+            const filtered = state.products.filter((product) => {
+                if (!filter) return true;
+                return [product.name, product.slug, product.origin].filter(Boolean).some((value) => value.toLowerCase().includes(filter));
+            });
+            if (!filtered.length) {
+                elements.productsList.innerHTML = '<p class="hint">Aucun produit trouve.</p>';
+                return;
+            }
+
+            elements.productsList.innerHTML = filtered.map((product) => {
+                const categoryName = product.category?.name || 'Sans categorie';
+                const basePrice = product.base_promo_price || product.base_price || '-';
+                const flags = [
+                    product.is_active ? 'Actif' : 'Inactif',
+                    product.is_featured ? 'Featured' : '',
+                    product.is_bestseller ? 'Bestseller' : '',
+                    product.is_new ? 'Nouveau' : ''
+                ].filter(Boolean);
+
+                return `
+                    <article class="product-card ${product.is_active ? '' : 'inactive'}">
+                        <h3>${product.name}</h3>
+                        <p class="product-meta">${product.slug} • ${categoryName} • ${basePrice} MAD</p>
+                        <div class="product-flags">${flags.map((flag) => `<span class="badge">${flag}</span>`).join('')}</div>
+                        <div class="toolbar">
+                            <button class="btn-primary" type="button" data-action="edit" data-id="${product.id}">Modifier</button>
+                            <button class="${product.is_active ? 'btn-danger' : 'btn-secondary'}" type="button" data-action="${product.is_active ? 'deactivate' : 'activate'}" data-id="${product.id}">
+                                ${product.is_active ? 'Desactiver' : 'Reactiver'}
+                            </button>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        async function loadCategories(selectId = null) {
+            const result = await fetchJson(categoriesEndpoint);
+            state.categories = result.data || [];
+            elements.categorySelect.innerHTML = '<option value="">Sans categorie</option>' + state.categories.map((category) => `<option value="${category.id}">${category.name}</option>`).join('');
+            if (selectId) elements.categorySelect.value = String(selectId);
+        }
+
+        async function loadOptions() {
+            const result = await fetchJson(optionsEndpoint);
+            state.options = result.data || state.options;
+            renderSelectOptions(elements.originSelect, state.options.origins, 'Selectionner une origine');
+            renderSelectOptions(elements.gradeSelect, state.options.grades, 'Selectionner un grade');
+            renderSelectOptions(elements.intensitySelect, state.options.intensities, 'Selectionner une intensite');
+            renderSelectOptions(elements.profileSelect, state.options.profiles, 'Selectionner un profil');
+            elements.tagsList.innerHTML = (state.options.tags || []).map((tag) => `<option value="${tag}"></option>`).join('');
+        }
+
+        async function loadProducts() {
+            setStatus(elements.listStatus, 'Chargement des produits...');
+            try {
+                const result = await fetchJson(`${productsEndpoint}?include_inactive=true`);
+                state.products = result.data || [];
+                renderProducts();
+                setStatus(elements.listStatus, `${state.products.length} produit(s) charges.`, 'success');
+            } catch (error) {
+                setStatus(elements.listStatus, error.message, 'error');
+            }
+        }
+
+        async function saveProduct(event) {
+            event.preventDefault();
+            setStatus(elements.formStatus, 'Enregistrement...');
+            elements.saveButton.disabled = true;
+            try {
+                const payload = getFormPayload();
+                const isEdit = Boolean(state.currentProductId);
+                const result = await fetchJson(isEdit ? `${productsEndpoint}/${state.currentProductId}` : productsEndpoint, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    body: JSON.stringify(payload)
+                });
+                await loadOptions();
+                await loadProducts();
+                fillForm(result.data);
+                setStatus(elements.formStatus, result.message || 'Produit enregistre.', 'success');
+            } catch (error) {
+                setStatus(elements.formStatus, error.message, 'error');
+            } finally {
+                elements.saveButton.disabled = false;
+            }
+        }
+
+        async function toggleProduct(productId, action) {
+            setStatus(elements.listStatus, `${action === 'deactivate' ? 'Desactivation' : 'Reactivation'} en cours...`);
+            try {
+                const result = await fetchJson(`${productsEndpoint}/${productId}/${action}`, { method: 'PATCH' });
+                await loadProducts();
+                if (state.currentProductId === productId) fillForm(result.data);
+                setStatus(elements.listStatus, result.message, 'success');
+            } catch (error) {
+                setStatus(elements.listStatus, error.message, 'error');
+            }
+        }
+
+        async function uploadSingleImage(file) {
+            if (!file) throw new Error('Selectionne une image avant upload');
+            const body = new FormData();
+            body.append('image', file);
+            body.append('slug', document.getElementById('slug').value || document.getElementById('name').value || 'produit');
+            const result = await fetchJson(uploadEndpoint, { method: 'POST', body });
+            return normalizeUploadedUrl(result.data.url);
+        }
+
+        async function uploadMainImage() {
+            const file = document.getElementById('mainImageFile').files[0];
+            setStatus(elements.formStatus, 'Upload image principale...');
+            try {
+                const imageUrl = await uploadSingleImage(file);
+                document.getElementById('image_url_local').value = imageUrl;
+                setStatus(elements.formStatus, `Image principale ajoutee: ${imageUrl}`, 'success');
+            } catch (error) {
+                setStatus(elements.formStatus, error.message, 'error');
+            }
+        }
+
+        async function uploadAdditionalImages() {
+            const files = [...document.getElementById('additionalImageFiles').files];
+            if (!files.length) {
+                setStatus(elements.formStatus, 'Selectionne au moins une image.', 'error');
+                return;
+            }
+            setStatus(elements.formStatus, `Upload de ${files.length} image(s)...`);
+            try {
+                const uploaded = [];
+                for (const file of files) {
+                    const imageUrl = await uploadSingleImage(file);
+                    uploaded.push(imageUrl);
+                }
+                const textArea = document.getElementById('additional_images');
+                const existing = (textArea.value || '').split(/\n|,/).map((item) => item.trim()).filter(Boolean);
+                const merged = [...new Set([...existing, ...uploaded])];
+                textArea.value = merged.join('\n');
+                setStatus(elements.formStatus, `${uploaded.length} image(s) additionnelles ajoutees.`, 'success');
+            } catch (error) {
+                setStatus(elements.formStatus, error.message, 'error');
+            }
+        }
+
+        async function addCategory() {
+            const name = window.prompt('Nom de la nouvelle categorie ?');
+            if (!name || !name.trim()) return;
+            const description = window.prompt('Description (optionnelle) ?') || '';
+            try {
+                const result = await fetchJson(categoriesEndpoint, {
+                    method: 'POST',
+                    body: JSON.stringify({ name: name.trim(), description: description.trim() })
+                });
+                await loadCategories(result.data.id);
+                setStatus(elements.formStatus, `Categorie ajoutee: ${result.data.name}`, 'success');
+            } catch (error) {
+                setStatus(elements.formStatus, error.message, 'error');
+            }
+        }
+
+        elements.productForm.addEventListener('submit', saveProduct);
+        elements.addVariantButton.addEventListener('click', () => createVariantCard({ is_active: true }));
+        elements.newButton.addEventListener('click', resetForm);
+        elements.refreshButton.addEventListener('click', loadProducts);
+        elements.searchInput.addEventListener('input', renderProducts);
+        elements.uploadMainImageButton.addEventListener('click', uploadMainImage);
+        elements.uploadAdditionalImagesButton.addEventListener('click', uploadAdditionalImages);
+        elements.addCategoryButton.addEventListener('click', addCategory);
+
+        elements.toggleActiveButton.addEventListener('click', async () => {
+            if (!state.currentProductId) return;
+            const current = state.products.find((product) => product.id === state.currentProductId);
+            if (!current) return;
+            await toggleProduct(state.currentProductId, current.is_active ? 'deactivate' : 'activate');
+        });
+
+        document.querySelectorAll('[data-param-add]').forEach((button) => {
+            button.addEventListener('click', () => toggleCustomInput(button.dataset.paramAdd, true));
+        });
+
+        ['origin', 'grade', 'intensity', 'profile'].forEach((fieldName) => {
+            const select = document.getElementById(`${fieldName}_select`);
+            select.addEventListener('change', () => {
+                if (select.value) {
+                    document.getElementById(`${fieldName}_custom`).value = '';
+                    document.getElementById(`${fieldName}_custom`).classList.remove('active');
+                }
+            });
+        });
+
+        elements.productsList.addEventListener('click', async (event) => {
+            const button = event.target.closest('button[data-action]');
+            if (!button) return;
+            const productId = Number(button.dataset.id);
+            const action = button.dataset.action;
+            if (action === 'edit') {
+                try {
+                    const result = await fetchJson(`${productsEndpoint}/${productId}`);
+                    fillForm(result.data);
+                } catch (error) {
+                    setStatus(elements.listStatus, error.message, 'error');
+                }
+                return;
+            }
+            await toggleProduct(productId, action);
+        });
+
+        Promise.all([loadOptions(), loadCategories(), loadProducts()])
+            .then(() => resetForm())
+            .catch((error) => setStatus(elements.listStatus, error.message, 'error'));
+    </script>
+</body>
+</html>
