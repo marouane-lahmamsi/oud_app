@@ -461,6 +461,8 @@
             searchInput: document.getElementById('searchInput'),
             saveButton: document.getElementById('saveButton'),
             tagsList: document.getElementById('tagsList'),
+            mainImageFile: document.getElementById('mainImageFile'),
+            additionalImageFiles: document.getElementById('additionalImageFiles'),
             uploadMainImageButton: document.getElementById('uploadMainImageButton'),
             uploadAdditionalImagesButton: document.getElementById('uploadAdditionalImagesButton')
         };
@@ -763,7 +765,11 @@
         }
 
         async function uploadMainImage() {
-            const file = document.getElementById('mainImageFile').files[0];
+            const file = elements.mainImageFile?.files?.[0];
+            if (!file) {
+                elements.mainImageFile?.click();
+                return;
+            }
             setStatus(elements.formStatus, 'Upload image principale...');
             try {
                 const imageUrl = await uploadSingleImage(file);
@@ -775,9 +781,9 @@
         }
 
         async function uploadAdditionalImages() {
-            const files = [...document.getElementById('additionalImageFiles').files];
+            const files = [...(elements.additionalImageFiles?.files || [])];
             if (!files.length) {
-                setStatus(elements.formStatus, 'Selectionne au moins une image.', 'error');
+                elements.additionalImageFiles?.click();
                 return;
             }
             setStatus(elements.formStatus, `Upload de ${files.length} image(s)...`);
@@ -818,9 +824,15 @@
         elements.newButton.addEventListener('click', resetForm);
         elements.refreshButton.addEventListener('click', loadProducts);
         elements.searchInput.addEventListener('input', renderProducts);
-        elements.uploadMainImageButton.addEventListener('click', uploadMainImage);
-        elements.uploadAdditionalImagesButton.addEventListener('click', uploadAdditionalImages);
+        elements.uploadMainImageButton?.addEventListener('click', uploadMainImage);
+        elements.uploadAdditionalImagesButton?.addEventListener('click', uploadAdditionalImages);
         elements.addCategoryButton.addEventListener('click', addCategory);
+        elements.mainImageFile?.addEventListener('change', () => {
+            if (elements.mainImageFile.files?.length) uploadMainImage();
+        });
+        elements.additionalImageFiles?.addEventListener('change', () => {
+            if (elements.additionalImageFiles.files?.length) uploadAdditionalImages();
+        });
 
         elements.toggleActiveButton.addEventListener('click', async () => {
             if (!state.currentProductId) return;
