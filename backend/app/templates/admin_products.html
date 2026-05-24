@@ -433,6 +433,7 @@
         const categoriesEndpoint = `${adminBase}/categories`;
         const optionsEndpoint = `${adminBase}/product-options`;
         const uploadEndpoint = `${adminBase}/uploads/image`;
+        const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
         const state = {
             products: [],
@@ -757,6 +758,9 @@
 
         async function uploadSingleImage(file) {
             if (!file) throw new Error('Selectionne une image avant upload');
+            if (file.size > MAX_UPLOAD_BYTES) {
+                throw new Error('Image trop lourde. Taille maximale: 10MB');
+            }
             const body = new FormData();
             body.append('image', file);
             body.append('slug', document.getElementById('slug').value || document.getElementById('name').value || 'produit');

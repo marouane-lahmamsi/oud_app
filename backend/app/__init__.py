@@ -60,5 +60,12 @@ def create_app(config_name='default'):
     def internal_error(error):
         db.session.rollback()
         return {'error': 'Internal server error', 'message': 'Something went wrong'}, 500
+
+    @app.errorhandler(413)
+    def payload_too_large(error):
+        return {
+            'error': 'Payload too large',
+            'message': 'Maximum upload size is 10MB'
+        }, 413
     
     return app
