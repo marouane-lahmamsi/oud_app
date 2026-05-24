@@ -212,14 +212,14 @@ def build_public_uploaded_url(file_name):
 def validate_uploaded_image_size(image):
     """Reject files larger than 10MB while allowing multipart overhead in request."""
     size = getattr(image, 'content_length', None)
-    if size is None:
+    if not size:
         stream = image.stream
         current_pos = stream.tell()
         stream.seek(0, 2)
         size = stream.tell()
         stream.seek(current_pos)
 
-    if size and size > MAX_IMAGE_UPLOAD_BYTES:
+    if size is not None and size > MAX_IMAGE_UPLOAD_BYTES:
         raise ValueError('Image too large. Maximum size is 10MB.')
 
 
