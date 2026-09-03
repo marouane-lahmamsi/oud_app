@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'frontend/**'
+      - 'deploy/nginx/**'
       - '.github/workflows/deploy-frontend.yml'
   workflow_dispatch:
 
@@ -86,6 +87,11 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
         run: |
+          scp -P "$VPS_PORT" deploy/nginx/medinaoud-http.conf \
+            "$VPS_USER@$VPS_IP:/tmp/medinaoud-http.conf"
+          scp -P "$VPS_PORT" deploy/nginx/medinaoud-https.conf \
+            "$VPS_USER@$VPS_IP:/tmp/medinaoud-https.conf"
+
           ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" << 'EOF'
             set -e
 
@@ -95,101 +101,7 @@ jobs:
               SUDO="sudo"
             fi
 
-            write_http_config() {
-              cat > /tmp/medinaoud.com.conf <<'NGINX'
-            server {
-                listen 80;
-                listen [::]:80;
-                server_name medinaoud.com www.medinaoud.com;
-
-                location ^~ /.well-known/acme-challenge/ {
-                    root /var/www/oud_app/frontend;
-                    default_type text/plain;
-                    try_files $uri =404;
-                }
-
-                location = / {
-                    return 301 /oud/;
-                }
-
-                location = /oud {
-                    return 301 /oud/;
-                }
-
-                # Reuse the current site served by the default VPS virtual host.
-                location /oud/ {
-                    proxy_pass http://127.0.0.1;
-                    proxy_set_header Host 88.223.92.174;
-                    proxy_set_header X-Real-IP $remote_addr;
-                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto $scheme;
-                    proxy_set_header X-Forwarded-Host $host;
-                }
-            }
-            NGINX
-              $SUDO install -m 644 /tmp/medinaoud.com.conf /etc/nginx/conf.d/medinaoud.com.conf
-            }
-
-            write_https_config() {
-              cat > /tmp/medinaoud.com.conf <<'NGINX'
-            server {
-                listen 80;
-                listen [::]:80;
-                server_name medinaoud.com www.medinaoud.com;
-
-                location ^~ /.well-known/acme-challenge/ {
-                    root /var/www/oud_app/frontend;
-                    default_type text/plain;
-                    try_files $uri =404;
-                }
-
-                location / {
-                    return 301 https://medinaoud.com$request_uri;
-                }
-            }
-
-            server {
-                listen 443 ssl;
-                listen [::]:443 ssl;
-                server_name www.medinaoud.com;
-
-                ssl_certificate /etc/letsencrypt/live/medinaoud.com/fullchain.pem;
-                ssl_certificate_key /etc/letsencrypt/live/medinaoud.com/privkey.pem;
-
-                return 301 https://medinaoud.com$request_uri;
-            }
-
-            server {
-                listen 443 ssl;
-                listen [::]:443 ssl;
-                server_name medinaoud.com;
-
-                ssl_certificate /etc/letsencrypt/live/medinaoud.com/fullchain.pem;
-                ssl_certificate_key /etc/letsencrypt/live/medinaoud.com/privkey.pem;
-
-                location = / {
-                    return 301 /oud/;
-                }
-
-                location = /oud {
-                    return 301 /oud/;
-                }
-
-                # Reuse the current site served by the default VPS virtual host.
-                location /oud/ {
-                    proxy_pass http://127.0.0.1;
-                    proxy_set_header Host 88.223.92.174;
-                    proxy_set_header X-Real-IP $remote_addr;
-                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto $scheme;
-                    proxy_set_header X-Forwarded-Host $host;
-                }
-            }
-            NGINX
-              $SUDO install -m 644 /tmp/medinaoud.com.conf /etc/nginx/conf.d/medinaoud.com.conf
-            }
-
-            write_http_config
+            $SUDO install -m 644 /tmp/medinaoud-http.conf /etc/nginx/conf.d/medinaoud.com.conf
             $SUDO nginx -t
             $SUDO systemctl reload nginx
 
@@ -208,7 +120,7 @@ jobs:
               --non-interactive --agree-tos --email jaknitaha@gmail.com \
               --keep-until-expiring --deploy-hook "$SUDO systemctl reload nginx" \
               -d medinaoud.com -d www.medinaoud.com; then
-              write_https_config
+              $SUDO install -m 644 /tmp/medinaoud-https.conf /etc/nginx/conf.d/medinaoud.com.conf
               $SUDO nginx -t
               $SUDO systemctl reload nginx
             else
