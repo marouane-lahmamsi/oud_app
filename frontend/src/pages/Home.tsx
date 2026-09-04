@@ -8,6 +8,7 @@ import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { Button } from '@/components/ui/button';
 import { publicAPI } from '@/services/api';
+import { assetUrl } from '@/lib/assets';
 import type { Product } from '@/types';
 
 export function Home() {
@@ -67,7 +68,7 @@ export function Home() {
           {/* Background */}
           <div className="absolute inset-0">
             <img
-              src="/images/hero/hero-1.jpg"
+              src={assetUrl('images/hero/hero-1.jpg')}
               alt="Oud"
               className="w-full h-full object-cover"
             />
@@ -81,7 +82,7 @@ export function Home() {
                 Oud Naturel Premium
               </span>
               
-              <h1 className="font-serif text-5xl lg:text-6xl text-white leading-tight mb-6">
+              <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-white leading-tight mb-6">
                 Medina Oud
               </h1>
               
@@ -89,14 +90,14 @@ export function Home() {
                 L'art ancestral de l'oud, sélectionné aux quatre coins du monde.
               </p>
 
-              <div className="flex gap-4">
-                <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-stone-900" asChild>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <Button size="lg" className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-stone-900" asChild>
                   <Link to="/collection">
                     Découvrir
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
-                <Button size="lg" className="bg-stone-800 hover:bg-stone-700 text-white" asChild>
+                <Button size="lg" className="w-full sm:w-auto bg-stone-800 hover:bg-stone-700 text-white" asChild>
                   <Link to="/quiz">Quiz</Link>
                 </Button>
               </div>

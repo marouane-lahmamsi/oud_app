@@ -2,6 +2,7 @@ import { Header } from '@/sections/Header';
 import { Footer } from '@/sections/Footer';
 import { CartDrawer } from '@/components/ui/CartDrawer';
 import { WhatsAppButton } from '@/components/ui/WhatsAppButton';
+import { assetUrl } from '@/lib/assets';
 
 import { Leaf, Globe, Award, Heart } from 'lucide-react';
 
@@ -38,7 +39,7 @@ export function About() {
           <div className="absolute inset-0 bg-stone-900" />
           <div className="absolute inset-0 opacity-20">
             <img
-              src="/images/hero/hero-1.jpg"
+              src={assetUrl('images/hero/hero-1.jpg')}
               alt="Oud"
               className="w-full h-full object-cover"
             />
@@ -62,7 +63,7 @@ export function About() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div className="aspect-[4/3] rounded-3xl overflow-hidden bg-stone-200">
                 <img
-                  src="/images/hero/hero-2.jpg"
+                  src={assetUrl('images/hero/hero-2.jpg')}
                   alt="Notre histoire"
                   className="w-full h-full object-cover"
                 />

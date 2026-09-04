@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles, Shield, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+import { assetUrl } from '@/lib/assets';
 
 export function Hero() {
   const [currentImage, setCurrentImage] = useState(0);
@@ -10,15 +11,15 @@ export function Hero() {
 
   const heroImages = [
     {
-      url: '/images/hero/hero-1.jpg',
+      url: assetUrl('images/hero/hero-1.jpg'),
       alt: 'Oud naturel premium',
     },
     {
-      url: '/images/hero/hero-2.jpg',
+      url: assetUrl('images/hero/hero-2.jpg'),
       alt: 'Copeaux d\'oud',
     },
     {
-      url: '/images/hero/hero-3.jpg',
+      url: assetUrl('images/hero/hero-3.jpg'),
       alt: 'Brûleur d\'oud traditionnel',
     },
   ];

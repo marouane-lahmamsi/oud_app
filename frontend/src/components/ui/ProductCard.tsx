@@ -4,6 +4,7 @@ import { ShoppingCart, Check, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/useCart';
+import { assetUrl } from '@/lib/assets';
 import type { Product } from '@/types';
 
 interface ProductCardProps {
@@ -67,7 +68,7 @@ export function ProductCard({ product, className, showQuickAdd = true }: Product
         
         {/* Product Image */}
         <img
-          src={product.images?.[0] || '/images/placeholder.jpg'}
+          src={product.images?.[0] || assetUrl('images/products/oud-al-majlis-1.jpg')}
           alt={product.name}
           className={cn(
             'w-full h-full object-cover transition-transform duration-700',
