@@ -84,9 +84,15 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
           BACKEND_ENV_FILE: ${{ secrets.BACKEND_ENV_FILE }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: |
           ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" "mkdir -p /var/www/oud_app/backend"
           printf '%s\n' "$BACKEND_ENV_FILE" | ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" "cat > /var/www/oud_app/backend/.env"
+          if [ -n "$SMTP_PASSWORD" ]; then
+            printf '\nSMTP_PASSWORD=%s\n' "$SMTP_PASSWORD" | ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" "cat >> /var/www/oud_app/backend/.env"
+          else
+            echo "SMTP_PASSWORD is not configured; order-email notifications remain disabled."
+          fi
           ssh -p "$VPS_PORT" "$VPS_USER@$VPS_IP" << 'EOF'
             set -e
             SERVICE_USER="$(systemctl show -p User --value oud-backend | tr -d '[:space:]')"
