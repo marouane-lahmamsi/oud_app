@@ -5,6 +5,7 @@ from app.models.order import Order, OrderItem, OrderStatus, PaymentStatus, Payme
 from app.models.product import Product, ProductVariant
 from app.models.customer import Customer
 from app.models.promotion import Promotion
+from app.services.order_notifications import send_new_order_notification
 
 orders_bp = Blueprint('orders', __name__)
 
@@ -193,6 +194,9 @@ def create_order():
             order.total_amount = subtotal - discount_amount
         
         db.session.commit()
+
+        # An accepted order must remain accepted even if the SMTP provider is unavailable.
+        send_new_order_notification(order)
         
         return jsonify({
             'success': True,

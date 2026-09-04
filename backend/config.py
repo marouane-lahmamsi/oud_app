@@ -30,6 +30,23 @@ class Config:
     # Keep a bit of overhead for multipart boundaries while enforcing 10MB file size in route logic.
     MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 12 * 1024 * 1024))
 
+    # Order notification email (Hostinger Email SMTP by default)
+    ORDER_NOTIFICATION_ENABLED = os.environ.get('ORDER_NOTIFICATION_ENABLED', 'true').lower() == 'true'
+    ORDER_NOTIFICATION_RECIPIENTS = tuple(
+        email.strip() for email in os.environ.get(
+            'ORDER_NOTIFICATION_RECIPIENTS',
+            'lahmamsimarouane@gmail.com,jaknitaha@gmail.com'
+        ).split(',') if email.strip()
+    )
+    SMTP_HOST = os.environ.get('SMTP_HOST', 'smtp.hostinger.com')
+    SMTP_PORT = int(os.environ.get('SMTP_PORT', '465'))
+    SMTP_USERNAME = os.environ.get('SMTP_USERNAME', 'contact@medinaoud.com')
+    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
+    SMTP_USE_SSL = os.environ.get('SMTP_USE_SSL', 'true').lower() == 'true'
+    SMTP_TIMEOUT = int(os.environ.get('SMTP_TIMEOUT', '15'))
+    MAIL_FROM = os.environ.get('MAIL_FROM', 'contact@medinaoud.com')
+    MAIL_FROM_NAME = os.environ.get('MAIL_FROM_NAME', 'Medina Oud')
+
 class DevelopmentConfig(Config):
     """Development configuration."""
     FLASK_ENV = 'development'
